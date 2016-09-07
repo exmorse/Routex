@@ -1,0 +1,26 @@
+body {
+	background-color: #FFFFFF;
+}
+
+#main_toolbar {
+	color: white;
+	background-color: orange;
+}
+
+.colored-tabs {
+	color: white;
+	background-color: orange;
+}
+
+.colored-tabs md-ink-bar {
+	background: #4099ff;
+}
+
+.colored-tabs md-tab-item {
+	color: white !important;
+}
+
+.chart {
+  width: 100% !important; 
+  height: 600px !important;
+}

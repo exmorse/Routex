@@ -1,0 +1,1264 @@
+<html lang="en">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<!-- CSS -->	
+		<link rel="stylesheet" type="text/css" media="all" href="css/main.css">
+		
+		<!-- Angular Material style sheet -->
+		<!-- <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css"> -->
+		<link rel="stylesheet" href="angular_material/1.1.0/angular-material.min.css">
+
+
+		<title>Routex Controller Site</title>
+
+		<link rel="icon" href="img/icon_router_orange.png">	
+	</head>
+
+
+	<body ng-app="RoutexApp" ng-cloak>
+		<!-- Your HTML content here -->  
+		<div ng-controller="AppCtrl" ng-cloak>
+			
+			<!-- ___Toolbar___ -->
+			<md-content>
+				<md-toolbar id="main_toolbar">
+					<div class="md-toolbar-tools">
+						<md-button class="md-icon-button" id="back_button" ng-show="showBackButton" class="ng-hide" aria-label="Back" ng-click="goBack()">
+          						<md-icon md-svg-icon="img/ic_back.svg"></md-icon>
+        					</md-button> 
+						
+						<h2>
+							<span>Routex</span>
+						</h2>
+						<span flex></span>
+						
+						<md-button class="md-icon-button" aria-label="Reload" ng-click="reloadContent()">
+          						<md-icon md-svg-icon="img/ic_reload.svg"></md-icon>
+        					</md-button> 
+
+						<md-menu>
+							<md-button aria-label="Open Setting" class="md-icon-button" ng-click="$mdOpenMenu($event)">
+        							<md-icon md-menu-origin md-svg-icon="img/ic_more.svg"></md-icon>
+      							</md-button>
+      							<md-menu-content width="4">
+								<md-menu-item>
+								<md-button ng-click="showDialog($event, '#settingsDialog')">
+								Settings
+								</md-button>
+        							</md-menu-item>
+      							</md-menu-content>
+    						</md-menu>
+					</div>
+				</md-toolbar>
+			</md-content>
+			<!-- ___End_Toolbar___ -->
+			
+
+			<!-- ___Device&Service&Triggers_Tabs___ -->
+			<div ng-cloak id="dev_serv_page" ng-show="showDeviceAndServicePage" class="ng-hide">
+				<md-content layout-align="center center">
+					<md-tabs md-dynamic-height md-border-bottom class="colored-tabs" md-center-tabs>
+						<md-tab label="Devices">
+							<md-content class="md-padding">
+          						<h3>Device List</h3>
+								<div layout="column" layout-align="">
+								<md-card md-theme="default" md-theme-watch ng-repeat="dev in deviceList">
+							        	<md-card-title ng-click="toDevicePage(dev)">
+							        	<md-card-title-text>
+							        	<span class="md-headline">{{dev.device_name}}</span>
+							        	<span class="md-subhead">Technology : {{dev.technology}}</span>
+							        	<span class="md-subhead">Always On : {{dev.always_on ? 'Yes' : 'No'}}</span>
+							        	</md-card-title-text>
+							        	<md-card-title-media>
+							        	</md-card-title-media>
+									</md-card-title>
+							        	<md-card-actions layout="row" layout-align="end center">
+          									<md-button ng-click="deleteDevice(dev)">Delete</md-button>
+									</md-card-actions>
+								</md-card>
+								</div>
+        						</md-content>
+      						</md-tab>
+      
+						<md-tab label="Services">
+        						<md-content class="md-padding">
+								<div layout="row" layout-align="space-between center">
+          							<h3>Services</h3>
+								<md-button class="md-fab md-primary" aria-label="Graph">
+          								<md-icon md-svg-src="img/ic_timeline.svg" ng-click="toAllServiceGraph()"></md-icon>
+        							</md-button>
+								</div>								
+								<div layout="column" layout-align="">
+
+
+                                                                <md-card md-theme="default" md-theme-watch ng-repeat="serv in serviceList" ng-click="toServicePage(serv)">
+                                                                        <md-card-title>
+                                                                        <md-card-title-text>
+                                                                        <span class="md-headline">{{serv.service_name}} ({{serv.device_name}})</span>
+                                                                        <span class="md-subhead">Value Type : {{serv.service_type}}</span>
+                                                                        <span class="md-subhead">Last Value : {{serv.last_value}} ({{serv.timestamp}})</span>
+                                                                        </md-card-title-text>
+                                                                        <md-card-title-media>
+                                                                        </md-card-title-media>
+                                                                        </md-card-title>
+                                                                        <md-card-actions layout="row" layout-align="end center">
+                                                                        </md-card-actions>
+                                                                </md-card>
+                                                                </div>
+        					</md-content>
+      						</md-tab>
+						
+						<md-tab label="Triggers">
+        						<md-content class="md-padding">
+								<div layout="row" layout-align="space-between center">
+          								<h3>Triggers</h3>
+									<md-button class="md-fab md-primary" aria-label="Graph" ng-click="showDialog($event, '#newTriggerDialog')">
+          									<md-icon md-svg-src="img/ic_add.svg"></md-icon>
+        								</md-button>
+								</div>								
+								<div layout="column" layout-align="">
+                                                			<md-card md-theme="default" md-theme-watch ng-repeat="trig in selectedTriggers">
+                                                			<md-card-title>
+                                                			<md-card-title-text>
+                               	                 				<span class="md-headline">Conditions:</span>
+									
+										<div ng-repeat="condEl in trig.conditions">
+											<span class="md-subhead" style="margin:20px;">{{condEl.device_name}} - {{condEl.service_name}} - {{condEl.condition[0].toUpperCase() + condEl.condition.substring(1)}} - {{condEl.value}}</span>
+										</div>
+		
+                                                				<span class="md-headline"> Action: </span>
+										<div>
+											<span class="md-subhead" style="margin:20px;">
+											{{trig.then.type == "command" ? trig.then.device_name + ' - ' + trig.then.service_name + ' - ' + trig.then.command + ' ' + trig.then.argument : "Mail"}} </span>
+                                                				</div>
+									</md-card-title-text>
+                                                			</md-card-title>
+							        	<md-card-actions layout="row" layout-align="end center" style="margin:20px;">
+          									<md-button ng-click="deleteTrigger(trig)">Delete</md-button>
+									</md-card-actions>
+								</div>
+        					</md-content>
+      						</md-tab>
+    					</md-tabs>
+  				</md-content>
+			</div>
+			<!-- __End_Device&Service&Triggers_Page__-->
+
+
+			<!-- ___Device_Page___ -->
+			<div ng-cloak id="device_page" ng-show="showDevicePage" class="ng-hide">
+				<md-content layout-align="center center">
+        				<md-content class="md-padding">
+          					<h2>{{selectedDevice.device_name}}</h2>
+						<h4>{{selectedDevice.technology}} - Always On : {{selectedDevice.always_on}}</h4>
+						<div layout="column" layout-align="">
+                                                	<md-card md-theme="default" md-theme-watch ng-repeat="serv in selectedDevice.services" ng-click="toServicePage(serv)">
+                                                	<md-card-title>
+                                                	<md-card-title-text>
+                                                	<span class="md-headline">{{serv.service_name}} ({{serv.device_name}})</span>
+                                                	<span class="md-subhead">Value Type : {{serv.service_type}}</span>
+                                                	<span class="md-subhead">Last Value : {{serv.last_value}} ({{serv.timestamp}})</span>
+                                                	</md-card-title-text>
+                                               		<md-card-title-media>
+                                                	</md-card-title-media>
+                                                	</md-card-title>
+                                                	<md-card-actions layout="row" layout-align="end center">
+                                               		</md-card-actions>
+                                                	</md-card>
+                                                </div>
+        				</md-content>
+  				</md-content>
+			</div>
+			<!-- __Device_Page__-->
+
+
+			<!-- ___Service_Tabs___ -->
+			<div ng-cloak id="service_page" ng-show="showServicePage" class="ng-hide">
+				<md-content layout-align="center center">
+					<md-tabs md-dynamic-height md-border-bottom class="colored-tabs" md-center-tabs>
+						<md-tab label="Commands">
+							<md-content class="md-padding">
+          						<h3>{{selectedService.service_name}}</h3>
+
+							<div layout="row" layout-align="space-between center">
+								<h4>ThingSpeak: {{selectedService.thingspeak_on ? 'Enabled' : 'Disabled'}}</h4>
+								<md-button class="md-raised md-primary" aria-label="Enable-Disable TS" ng-click="setThingSpeak(selectedService)">
+        								{{selectedService.thingspeak_on ? 'Disable' : 'Enable'}}
+								</md-button>
+							</div>								
+							
+							<h4 id="request_status">{{selectedService.last_value}} - ({{selectedService.timestamp}})</h4>
+							
+							<div layout="column" layout-align=""></div>
+							
+							<div ng-repeat="com in selectedService.commands" layout="row" layout-sm="column" layout-align="center center" layout-wrap>
+      								<div ng-if="com.command_type == 'Button'">
+									<md-button md-no-ink class="md-raised md-primary" 
+										ng-click="executeCommand(selectedService, com.command_name, null)">{{com.command_name}}</md-button>
+								</div>
+      								<div ng-if="com.command_type == 'Button_Int'">
+									<md-button md-no-ink class="md-raised md-primary" 
+										ng-click="executeCommand(selectedService, com.command_name, com.dyn_arg)">{{com.command_name}}</md-button>
+									<md-input-container>
+          								<label>Argument</label>
+          								<input ng-model="com.dyn_arg">
+        								</md-input-container>	
+								</div>
+							</div>
+        						
+							</md-content>
+      						</md-tab>
+      
+						<md-tab label="Schedule">
+        						<md-content class="md-padding">
+								<div layout="row" layout-align="space-between center">
+          							<h3>Schedule</h3>
+								<md-button class="md-fab md-primary" aria-label="Graph" ng-click="showDialog($event, '#newScheduleDialog')">
+          								<md-icon md-svg-src="img/ic_add.svg"></md-icon>
+        							</md-button>
+								</div>								
+								<div layout="column" layout-align="">
+                                                			<md-card md-theme="default" md-theme-watch ng-repeat="el in selectedSchedule">
+                                                			<md-card-title>
+                                                			<md-card-title-text>
+                               	                 			<span class="md-headline">Command: {{el.command}} {{el.argument}}</span>
+                                                			<span class="md-subhead">{{el.time_type == 'F' ? 'Frequency : Hou:'+el.hours+'  Min:'+el.minutes+' Sec:'+el.seconds : 'Every Day At: '+el.time}}</span>
+                                                			</md-card-title-text>
+                                               				<md-card-title-media>
+                                                			</md-card-title-media>
+                                                			</md-card-title>
+							        	<md-card-actions layout="row" layout-align="end center">
+          									<md-button ng-click="deleteScheduleEvent(el)">Delete</md-button>
+									</md-card-actions>
+                                                                </div>
+        					</md-content>
+      						</md-tab>
+						
+						<md-tab label="Graph" md-enable-disconnect="true">
+        						<md-content class="md-padding">
+								<div layout="row">
+        	  							<h3>Graph</h3>
+								</div>
+
+								<div layout="row" layout-align="space-around">
+									<mdp-date-picker mdp-open-on-click required name="dateFormat" 
+											 mdp-placeholder="Start Date" mdp-format="DD/MM/YYYY" 
+											ng-model="start_date">
+										<div ng-messages="demoForm.dateFormat.$error">
+                  								<div ng-message="required">This is required</div>
+                  								<div ng-message="format">Invalid format</div>
+                								</div>
+              								</mdp-date-picker>
+									<mdp-time-picker mdp-auto-switch="true"  mdp-placeholder="Start Time" ng-model="start_time"></mdp-time-picker>
+								</div>				
+												
+								<div layout="row" layout-align="space-around">
+									<mdp-date-picker mdp-open-on-click required name="dateFormat" 
+											 mdp-placeholder="End Date" mdp-format="DD/MM/YYYY" 
+											ng-model="end_date">
+										<div ng-messages="demoForm.dateFormat.$error">
+                  								<div ng-message="required">This is required</div>
+                  								<div ng-message="format">Invalid format</div>
+                								</div>
+              								</mdp-date-picker>
+									<mdp-time-picker mdp-auto-switch="true"  mdp-placeholder="End Time" ng-model="end_time"></mdp-time-picker>
+								</div>				
+												
+								<div layout="row" layout-align="center center">
+          								<md-button class="md-raised md-primary"
+										ng-disabled="start_date == null || end_date == null || start_time == null || end_time == null" 
+										ng-click="getServiceData(selectedService, start_date.getTime() - start_date.getHours()*3600*1000 - start_date.getMinutes()*60*1000  + start_time.getHours()*3600*1000 + start_time.getMinutes()*60*1000, end_date.getTime() - end_date.getHours()*3600*1000 - end_date.getMinutes()*60*1000 + end_time.getHours()*3600*1000 + end_time.getMinutes()*60*1000)">	
+										Refresh Graph
+									</md-button>
+								</div>				
+								
+								<div layout="row" layout-align="center center">
+									<div id="serviceChart" class="chart"/>
+								</div>				
+        						</md-content>
+      						</md-tab>
+						
+
+    					</md-tabs>
+  				</md-content>
+			</div>
+			</div>
+			<!-- __Service_Tabs___ -->
+
+			<!-- ___All_Graph_Page___ -->
+			<div ng-cloak id="all_graph_page" ng-show="showAllGraphPage" class="ng-hide">
+				<md-content layout-align="center center">
+        				<md-content class="md-padding">
+          					<h2>Services Graph</h2>
+									<fieldset class="standard" >
+									         <legend>Services to Show</legend>
+          									<div layout="row" layout-wrap flex>
+            									<div flex="50" ng-repeat="s in serviceList">
+              									<md-checkbox class="md-primary" ng-checked="" ng-click="" ng-model="s.selected_in_graph">
+                									{{ s.service_name }} <!-- <span ng-if="exists(item, selected)">selected</span> -->
+              									</md-checkbox>
+            									</div>
+          									</div>
+        								</fieldset>							
+
+								<br/>
+									
+								<div layout="row" layout-align="space-around">
+									<mdp-date-picker mdp-open-on-click required name="dateFormat" 
+											 mdp-placeholder="Start Date" mdp-format="DD/MM/YYYY" 
+											ng-model="start_date">
+										<div ng-messages="demoForm.dateFormat.$error">
+                  								<div ng-message="required">This is required</div>
+                  								<div ng-message="format">Invalid format</div>
+                								</div>
+              								</mdp-date-picker>
+									<mdp-time-picker mdp-auto-switch="true"  mdp-placeholder="Start Time" ng-model="start_time"></mdp-time-picker>
+								</div>				
+												
+								<div layout="row" layout-align="space-around">
+									<mdp-date-picker mdp-open-on-click required name="dateFormat" 
+											 mdp-placeholder="End Date" mdp-format="DD/MM/YYYY" 
+											ng-model="end_date">
+										<div ng-messages="demoForm.dateFormat.$error">
+                  								<div ng-message="required">This is required</div>
+                  								<div ng-message="format">Invalid format</div>
+                								</div>
+              								</mdp-date-picker>
+									<mdp-time-picker mdp-auto-switch="true"  mdp-placeholder="End Time" ng-model="end_time"></mdp-time-picker>
+								</div>				
+												
+								<div layout="row" layout-align="center center">
+          								<md-button class="md-raised md-primary"
+										ng-disabled="start_date == null || end_date == null || start_time == null || end_time == null" 
+										ng-click="updateAllServiceGraph(start_date.getTime() - start_date.getHours()*3600*1000 - start_date.getMinutes()*60*1000  + start_time.getHours()*3600*1000 + start_time.getMinutes()*60*1000, end_date.getTime() - end_date.getHours()*3600*1000 - end_date.getMinutes()*60*1000 + end_time.getHours()*3600*1000 + end_time.getMinutes()*60*1000)">	
+										Refresh Graph
+									</md-button>
+								</div>
+						
+						<div layout="column" layout-align="">
+							<div layout="row" layout-align="center center">
+								<div id="allServiceChart" class="chart" style="display: inline-block; margin: auto;"/>
+							</div>				
+                                                </div>
+        				</md-content>
+  				</md-content> 
+			</div>
+			<!-- __All_Graph_Page__-->
+						
+			<!-- Modals -->
+			<div style="visibility: hidden">
+    			<div class="md-dialog-container" id="settingsDialog">
+      				<md-dialog layout-padding>
+       					<h2>Settings</h2>
+					
+					<md-input-container>
+          					<label>Routex Url</label>
+          					<input ng-model="serverUrl">
+        				</md-input-container>	
+					
+					<md-input-container>
+          					<label>Mail Destination Address</label>
+          					<input ng-model="mailDst">
+        				</md-input-container>	
+			
+					<div layout="row" layout-sm="column" layout-align="center center" layout-wrap>
+      						<md-button md-no-ink class="md-raised md-primary" ng-click="closeDialog('#settingsDialog')">Ok</md-button>
+					</div>
+      				</md-dialog>
+    			</div>
+  			</div>
+		
+
+			<div style="visibility: hidden">
+    			<div class="md-dialog-container" id="newScheduleDialog">
+      				<md-dialog layout-padding flex="50">
+       					<h2>Add Schedule Element</h2>
+					<!-- Command -->
+					<md-input-container>
+          				<label>Command</label>
+          				<md-select ng-model="newScheduleEl.command">
+            				<md-option ng-repeat="c in selectedService.commands" ng-value="c">
+              					{{c.command_name}}
+            				</md-option>
+          				</md-select>
+        				</md-input-container>
+
+					<!-- Argument -->
+					<md-input-container>
+          					<label>Argument</label>
+          					<input ng-model="newScheduleEl.argument" ng-disabled="newScheduleEl.command.command_type != 'Button_Int'">
+        				</md-input-container>	
+
+					<!-- Radio Buttons -->
+					<md-radio-group ng-model="newScheduleEl.time_type">
+      						<md-radio-button value="F" class="md-primary">Frequency</md-radio-button>
+      						<md-radio-button value="T" class="md-primary">Time</md-radio-button>
+    					</md-radio-group>
+					
+					<!-- Freuquency Pickers -->
+					<div layout="row" layout-align="space-between center" ng-show="newScheduleEl.time_type == 'F'" layout-wrap>
+						
+						<md-input-container>
+          						<label>Hours</label>
+     	     						<md-select ng-model="newScheduleEl.hours">
+            						<md-option ng-repeat="n in range(0,23)" ng-value="n">
+              							{{n}}
+            						</md-option>
+          						</md-select>
+        					</md-input-container>
+			
+						<md-input-container>
+          						<label>Minutes</label>
+          						<md-select ng-model="newScheduleEl.minutes">
+            						<md-option ng-repeat="n in range(0,59)" ng-value="n">
+              							{{n}}
+            						</md-option>
+          						</md-select>
+        					</md-input-container>
+			
+						<md-input-container>
+          						<label>Seconds</label>
+          						<md-select ng-model="newScheduleEl.seconds">
+            						<md-option ng-repeat="n in range(0,59)" ng-value="n">
+              							{{n}}
+            						</md-option>
+          						</md-select>
+        					</md-input-container>
+			
+					</div>	
+
+					<div layout="row" layout-align="space-between center" ng-show="newScheduleEl.time_type == 'T'" layout-wrap>
+						<mdp-time-picker mdp-auto-switch="true"  mdp-placeholder="Event Time" ng-model="newScheduleEl.time"></mdp-time-picker>
+					</div>					
+
+					<div layout="row" layout-sm="column" layout-align="center center" layout-wrap>
+      						<md-button md-no-ink class="md-raised md-primary" ng-click="addScheduleEvent()">Ok</md-button>
+      						<md-button md-no-ink class="md-raised md-primary" ng-click="closeDialog('#newScheduleDialog')">Cancel</md-button>
+					</div>
+      				</md-dialog>
+    			</div>
+    			</div>
+			
+
+			<div style="visibility: hidden">
+    			<div class="md-dialog-container" id="newTriggerDialog">
+      				<md-dialog layout-padding flex="50">
+       					<h2>Add Trigger</h2>
+					
+					<div layout="row">
+						<!-- Radio Buttons -->
+						<md-radio-group ng-model="newTriggerEl.type">
+      							<md-radio-button value="command" class="md-primary">Command</md-radio-button>
+      							<md-radio-button value="mail" class="md-primary">Mail</md-radio-button>
+    						</md-radio-group>
+					</div>
+	
+					<!-- Command Selected -->
+					<div ng-show="newTriggerEl.type == 'command'" layout="row" layout-align="space-around">
+						<md-input-container>
+          						<label>Command</label>
+          						<md-select ng-model="newTriggerEl.command">
+            						<md-option ng-repeat="c in commandList" ng-value="c">
+              							{{c.command_name}} - {{c.service_name}} - {{c.device_name}}
+            						</md-option>
+          						</md-select>
+        					</md-input-container>
+
+						<!-- Argument -->
+						<md-input-container>
+          						<label>Argument</label>
+          						<input ng-model="newTriggerEl.argument" ng-disabled="newTriggerEl.command.command_type != 'Button_Int'">
+        					</md-input-container>	
+					</div>
+
+					<!-- Mail Selected -->
+					<div ng-show="newTriggerEl.type == 'mail'" layout="row" layout-align="space-around">
+						<!-- Argument -->
+						<md-input-container>
+          						<label>Text Content</label>
+          						<input ng-model="newTriggerEl.text_content">
+        					</md-input-container>	
+					</div>				
+	
+					<div layout="row" layout-sm="column" layout-align="space-between" layout-wrap>
+						<h2>Conditions</h2>
+
+						<md-button class="md-fab md-primary" aria-label="Add Condition" ng-click="newTriggerEl.conditions.push([]);">
+          						<md-icon md-svg-src="img/ic_add.svg"></md-icon>
+        					</md-button>
+					</div>
+					
+					<div layout="row" layout-align="space-around" ng-repeat="conditionEl in newTriggerEl.conditions">
+						
+						<md-input-container>
+          						<label>Service</label>
+          						<md-select ng-model="conditionEl.service">
+            						<md-option ng-repeat="s in serviceList" ng-value="s">
+              							{{s.device_name}} - {{s.service_name}}
+            						</md-option>
+          						</md-select>
+        					</md-input-container>
+					
+						<!-- Condition -->
+						<md-input-container>
+       	  						<label>Condition</label>
+    	  						<md-select ng-model="conditionEl.condition">
+							<div ng-if="conditionEl.service.service_type == 'Number'">
+       								<md-option ng-repeat="condVal in triggerConditions" ng-value="condVal">
+         								{{condVal[0].toUpperCase() + condVal.substring(1)}}
+            							</md-option>
+							</div>
+							<div ng-if="conditionEl.service.service_type == 'Status'">
+       								<md-option ng-repeat="condVal in triggerConditionsString" ng-value="condVal">
+         								{{condVal[0].toUpperCase() + condVal.substring(1)}}
+            							</md-option>
+							</div>
+          						</md-select>
+      		  				</md-input-container>
+					
+						<!-- Value -->
+						<md-input-container>
+          						<label>Value</label>
+          						<input ng-model="conditionEl.value">
+        					</md-input-container>	
+					</div>
+
+					<div layout="row" layout-sm="column" layout-align="center center" layout-wrap>
+      						<md-button md-no-ink class="md-raised md-primary" ng-click="addTrigger()">Ok</md-button>
+      						<md-button md-no-ink class="md-raised md-primary" ng-click="closeDialog('#newTriggerDialog')">Cancel</md-button>
+					</div>
+      				</md-dialog>
+			</div>
+			</div>
+			<!-- End Modals -->
+		
+		</div>
+
+		<!-- End of Page Content -->
+
+		<!-- JQuery -->
+		<!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script> -->
+		<script src="jquery/1.12.4/jquery.min.js"></script>
+
+		<!-- Angular Material requires Angular.js Libraries -->
+		<!-- <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+		<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
+		<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
+		<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script> -->
+		<script src="angularjs/1.5.5/angular.min.js"></script>
+		<script src="angularjs/1.5.5/angular-animate.min.js"></script>
+		<script src="angularjs/1.5.5/angular-aria.min.js"></script>
+		<script src="angularjs/1.5.5/angular-messages.min.js"></script> 
+
+		<!-- Angular Material Library -->
+		<!-- <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script> -->
+		<script src="angular_material/1.1.0/angular-material.min.js"></script>
+
+		<!-- Chart -->
+		<!-- <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script> -->
+		<script type="text/javascript" src="charts/loader.js"></script>
+
+		<!-- DatePicker -->
+		<!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/alenaksu/mdPickers/0.7.4/dist/mdPickers.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<link rel="stylesheet" href="https://cdn.rawgit.com/alenaksu/mdPickers/0.7.4/dist/mdPickers.min.css"> -->
+		<script type="text/javascript" src="date_picker/moment.min.js"></script>
+		<script type="text/javascript" src="date_picker/mdPickers.min.js"></script>
+		<link rel="stylesheet" href="date_picker/material_icon">
+		<link rel="stylesheet" href="date_picker/mdPickers.min.css">
+
+		<!-- Your application bootstrap  -->
+		<script type="text/javascript">    
+			angular.module('RoutexApp', ['ngMaterial',  "ngAnimate", "ngAria", "ngMessages", "mdPickers"])
+				.controller('AppCtrl', ['$scope', '$mdDialog', '$mdpDatePicker', '$mdpTimePicker', function($scope, $mdDialog, $mdpDatePicker, $mdpTimePicker) {
+			
+					$scope.deviceList = [];
+					$scope.serviceList = [];
+					$scope.commandList = [];
+					//$scope.serverUrl = "http://192.168.1.119:5555";
+					$scope.serverUrl = "http://192.168.42.1:5555";
+					$scope.mailDst = "example@example.com";			
+
+					/* Show controller */
+					$scope.showDeviceAndServicePage = true;
+					$scope.showDevicePage = false;
+					$scope.showServicePage = false;
+					$scope.showBackButton = false;
+					$scope.showAllGraphPage = false;
+					
+					$scope.end_date = new Date();
+					$scope.start_date = new Date(new Date().getTime() - (24*60*60*1000));
+					$scope.start_time = new Date();
+					$scope.end_time = new Date();
+
+					$scope.selectedDevice = {};			
+					$scope.selectedService = {};			
+					$scope.selectedSchedule = {};
+					$scope.selectedTriggers = {};		
+
+					/* Modal Element */
+					$scope.newScheduleEl = {};
+					$scope.newScheduleEl.time = new Date();
+					$scope.newScheduleEl.time_type = 'F';
+					$scope.newTriggerEl = {};
+					$scope.newTriggerEl.type = 'command';
+
+					/* Trigger Conditions */
+					$scope.triggerConditions = [];
+					$scope.triggerConditions.push("greater");
+					$scope.triggerConditions.push("equal");
+					$scope.triggerConditions.push("less");
+			
+					$scope.triggerConditionsString = [];
+					$scope.triggerConditionsString.push("matches");
+					$scope.triggerConditionsString.push("contains");
+
+					/* All Graph */
+					$scope.allServiceGraphData = [];
+		
+    					/* Chart */
+					google.charts.load('current', {packages: ['corechart', 'line']});
+
+    					$scope.drawChart = function(serviceData) {
+      						var data = new google.visualization.DataTable();
+      						data.addColumn('datetime', 'Time');
+      						data.addColumn('number', serviceData.service_name);
+      						
+						var rows = []
+						for (var i in serviceData.values) {
+							rows.push([new Date(serviceData.values[i].timestamp), parseFloat(serviceData.values[i].value)]);
+						}
+						data.addRows(rows);
+
+      						var options = {
+        						hAxis: {
+          							title: 'Time'
+        						},
+        						vAxis: {
+          							title: $scope.selectedService.service_name
+        						},
+							background: '#00ffffff',
+							width: screen.width / (1.1),
+							height: screen.height / 2
+     						 };
+
+      						var chart = new google.visualization.LineChart(document.getElementById('serviceChart'));
+      						chart.draw(data, options);
+    					}
+
+
+    					$scope.drawAllGraphChart = function() {
+
+      						var data = new google.visualization.DataTable();
+      						data.addColumn('datetime', 'Time');
+	
+						for (var i in $scope.allServiceGraphData) {
+							data.addColumn('number', $scope.allServiceGraphData[i].device_name + " - " + $scope.allServiceGraphData[i].service_name)	
+						}      					
+	
+						var rows = [];
+						var index = 1;
+						for (var i in $scope.allServiceGraphData) {
+							for (var j in $scope.allServiceGraphData[i].values) {
+								elem = [];
+								elem.push(new Date($scope.allServiceGraphData[i].values[j].timestamp));
+								
+								for(var n = 1; n < index; n++) elem[n] = null /* null */
+								elem[index] = parseFloat($scope.allServiceGraphData[i].values[j].value);
+								for(var n = index+1; n <= $scope.allServiceGraphData.length; n++) elem[n] = null; /* null */				
+
+								console.log(elem);
+								rows.push(elem);
+							}
+							index++;
+						} 
+
+						data.addRows(rows);
+							
+						/*var rows = []
+							rows.push([new Date(1000000), 7, 8]);
+							rows.push([new Date(1004000), null, 14]);
+							rows.push([new Date(1008000), 5, null]);
+						data.addRows(rows);
+						*/
+      						var options = {
+        						hAxis: {
+          							title: 'Time'
+        						},
+        						vAxis: {
+          							title: 'Test'
+        						},
+							interpolateNulls: true,
+							background: '#00ffffff',
+							width: screen.width / (1.1),
+							height: screen.height / 2
+     						 };
+
+      						var chart = new google.visualization.LineChart(document.getElementById('allServiceChart'));
+      						chart.draw(data, options);
+    					}
+
+					$scope.loadDevices = function() {
+						$.ajax({
+							method: 'GET',
+							dataType: 'json',
+							url: $scope.serverUrl + '/getDevices.py',
+							success: function(data) {
+								console.log(data.status);
+								console.log(data.devices);
+								$scope.deviceList = data.devices;
+
+								$scope.serviceList = [];
+								$scope.commandList = [];
+								for (var i in $scope.deviceList) {
+									for (var j in $scope.deviceList[i].services) {
+										$scope.deviceList[i].services[j].device_name = $scope.deviceList[i].device_name;
+										$scope.deviceList[i].services[j].selected_in_graph = true;
+										$scope.serviceList.push($scope.deviceList[i].services[j]);
+										var serv = $scope.deviceList[i].services[j];
+										for (var z in serv.commands) {
+											serv.commands[z].service_name = serv.service_name;
+											serv.commands[z].device_name = serv.device_name;
+											$scope.commandList.push(serv.commands[z]);
+										}
+									}
+								}
+
+								/* Request Last Value */
+								for (var i in $scope.serviceList) {
+									$scope.getLastValue(i);
+								}
+								
+								$scope.$apply();
+							},
+							error: function(a, b, c) {
+								alert("Error (Devices): " + a.responseText + b + c);	
+							}
+						});
+					}
+
+					$scope.getLastValue = function(servIndex) {
+
+						jsonData = {};
+						jsonData.device_name = $scope.serviceList[servIndex].device_name;
+						jsonData.service_name = $scope.serviceList[servIndex].service_name;		
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/getLastValue.py',
+							data: JSON.stringify(jsonData),
+							success: function(data) {
+								console.log("Last Value " + data);
+								if (data.available) {
+									$scope.serviceList[servIndex].last_value = data.value;
+									$scope.serviceList[servIndex].timestamp = data.timestamp;
+								}
+								else {
+									$scope.serviceList[servIndex].last_value = "Not Available";
+									$scope.serviceList[servIndex].timestamp = "-";
+								}
+							},
+							error: function(a, b, c) {
+								alert("Error (Last Value): " + a + b +c);
+							} 
+						})
+					}
+
+					$scope.executeCommand = function(serv, command_name, arg) {
+						jsonData = {};
+						jsonData.device_name = serv.device_name;
+						jsonData.service_name = serv.service_name;
+						jsonData.command = command_name;
+
+						if (arg != null) {
+							jsonData.argument = arg;
+						}		
+						
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/executeCommand.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log("Command Executed!");	
+								console.log(data);
+								$scope.selectedService.last_value = data.result;
+								$scope.selectedService.timestamp = data.timestamp_str;
+								$scope.$apply();
+							},
+							error: function(a, b, c) {
+								alert("Error (Execute Command): " + a + b +c);
+							}
+						})
+					}
+
+					$scope.deleteDevice = function(device) {
+						jsonData = {};
+						jsonData.device_name = device.device_name;
+						console.log(jsonData)						
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/removeDevice.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								if (data.result == true) {
+									//alert("Device Deleted");
+									$scope.loadDevices()
+								}
+							},
+							error: function(a, b, c) {
+								alert("Error (Delete Device): " + a + b +c);
+							}
+						})
+					}
+
+					$scope.setThingSpeak = function(service) {
+						jsonData = {}
+						jsonData.device_name = service.device_name;
+						jsonData.service_name = service.service_name;
+						
+						if (service.thingspeak_on) jsonData.command = "OFF"; 
+						if (!service.thingspeak_on) jsonData.command = "ON";
+				
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/setThingSpeak.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								if (data.result == "ON") {
+									$scope.selectedService.thingspeak_on = true;
+								}	
+								else if (data.result == "OFF") {
+									$scope.selectedService.thingspeak_on = false;
+								}
+								else alert("Something Wrong in ThingSpeak Request");
+								$scope.$apply()
+							},
+							error: function (a, b, c) {
+								alert("Error (Thing Speak): " + a + b + c);
+							}
+						})
+					}
+
+					$scope.getSchedule = function(service) {
+						jsonData = {};
+						jsonData.service_name = service.service_name;						
+						jsonData.device_name = service.device_name;						
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/getSchedule.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data);
+								$scope.selectedSchedule = data.schedule;
+
+								for (var i in $scope.selectedSchedule) {
+									var h, m, s;
+									var freq = parseInt($scope.selectedSchedule[i].frequency);
+
+									h = Math.floor(freq / (60*60));
+									freq = freq - h*(60*60);
+									m = Math.floor(freq / 60);
+									freq = freq - m*60;
+									s = freq;
+
+									$scope.selectedSchedule[i].hours = h;
+									$scope.selectedSchedule[i].minutes = m;
+									$scope.selectedSchedule[i].seconds = s;
+								}
+	
+								$scope.$apply(); 
+							},
+							error: function(a, b, c) {
+								alert("Error (Get Schedule): " + a + b + c);
+							}
+						})
+					}
+				
+					$scope.getServiceData = function(service, startTime, endTime) {
+						jsonData = {};
+						jsonData.service_name = service.service_name;						
+						jsonData.device_name = service.device_name;						
+						jsonData.start_time = startTime;						
+						jsonData.end_time = endTime;						
+					
+						console.log(new Date(startTime))
+						console.log(new Date(endTime))
+	
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/getServiceData.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data)
+								$scope.drawChart(data)
+							},
+							error: function(a, b, c) {
+								alert("Error (Get Service Data): " + a + b + c);
+							}
+						})
+					}
+
+					$scope.getServiceDataForAllGraph = function(service, startTime, endTime) {
+						jsonData = {};
+						jsonData.service_name = service.service_name;						
+						jsonData.device_name = service.device_name;						
+						jsonData.start_time = startTime;						
+						jsonData.end_time = endTime;						
+					
+						console.log(new Date(startTime))
+						console.log(new Date(endTime))
+	
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/getServiceData.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data)
+								
+								dataObject = {}
+								dataObject.device_name = service.device_name;
+								dataObject.service_name = service.service_name;
+								dataObject.values = data.values;
+								$scope.allServiceGraphData.push(dataObject);
+
+								console.log($scope.allServiceGraphData);
+								$scope.drawAllGraphChart();
+							},
+							error: function(a, b, c) {
+								alert("Error (Get Service Data For All Graph): " + a + b + c);
+							}
+						})
+					}
+
+					$scope.updateAllServiceGraph = function(startTime, endTime) {
+
+						$scope.allServiceGraphData = [];
+
+						/* For every selected service request data */
+						for (var i in $scope.serviceList) {
+							console.log($scope.serviceList[i]);
+							if ($scope.serviceList[i].selected_in_graph) {
+								$scope.getServiceDataForAllGraph($scope.serviceList[i], startTime, endTime);
+							}
+						}
+					}
+	
+					$scope.addScheduleEvent = function() {
+						schedEl = $scope.newScheduleEl;
+						console.log(schedEl);
+						console.log($scope.newScheduleEl);
+
+						if (schedEl.command == null) {
+							alert("Command Missing");
+							return;
+						}
+	
+						if (schedEl.time_type == 'F') {
+							if (schedEl.hours == null || schedEl.minutes == null || schedEl.seconds == null) {
+								alert("Frequency Missing");
+								return;
+							}
+						}
+	
+						if (schedEl.time_type == 'T') {
+							if (schedEl.time == null) {
+								alert("Time Missing");
+								return;
+							}
+						}
+	
+						jsonData = {}
+						jsonData.schedule_command = 'A';
+						jsonData.device_name = $scope.selectedService.device_name;
+						jsonData.service_name = $scope.selectedService.service_name;
+						jsonData.command = schedEl.command.command_name;
+						jsonData.time_type = schedEl.time_type;
+						if (schedEl.time_type == 'F') jsonData.frequency = schedEl.hours*3600 + schedEl.minutes*60 + schedEl.seconds;
+						if (schedEl.time_type == 'T') jsonData.time = schedEl.time.getHours() + ":" +  schedEl.time.getMinutes();
+
+						if (schedEl.command.command_type != 'Button') {
+							if (schedEl.argument == null) {
+								alert("Argument Missing");
+								return;
+							}
+
+							jsonData.argument = schedEl.argument;
+						}
+			
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/handleSchedule.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data);
+								$scope.getSchedule($scope.selectedService);
+							},
+							error: function(a, b, c) {
+								alert("Error (Del Schedule): " + a + b + c);
+							}
+						})
+
+						$scope.closeDialog('#newScheduleDialog');
+							
+					}
+
+					$scope.deleteScheduleEvent = function(schedEl) {
+						console.log(schedEl);
+		
+						jsonData = {}
+						jsonData.schedule_command = 'R';
+						jsonData.device_name = $scope.selectedService.device_name;
+						jsonData.service_name = $scope.selectedService.service_name;
+						jsonData.command = schedEl.command;
+						jsonData.id = schedEl.id;
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/handleSchedule.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data);
+								$scope.getSchedule($scope.selectedService);
+							},
+							error: function(a, b, c) {
+								alert("Error (Del Schedule): " + a + b + c);
+							}
+						})
+							
+					}
+
+					$scope.getTriggers = function() {
+						jsonData = {};
+						//jsonData.service_name = service.service_name;						
+						//jsonData.device_name = service.device_name;
+						jsonData.request = "triggers";						
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/handleTrigger.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data);
+								$scope.selectedTriggers = data.triggers;
+
+								$scope.$apply(); 
+							},
+							error: function(a, b, c) {
+								alert("Error (Get Triggers): " + a + b + c);
+							}
+						})
+					}
+
+					$scope.addTrigger = function() {
+						trigEl = $scope.newTriggerEl;
+						console.log(trigEl);
+
+						if (trigEl.conditions == []) {
+							alert("Conditions Missing");
+							return;	
+						} 
+
+						jsonData = {};
+						jsonData.request = 'A';
+
+						jsonData.conditions = [];
+						for (var i in $scope.newTriggerEl.conditions) {
+							var condEl = $scope.newTriggerEl.conditions[i];
+							if (condEl.service == null || condEl.condition == null || condEl.value == null) {
+								alert("Condition Incomplete")
+								return;
+							}
+							var newCond = {}
+							newCond.service_name = condEl.service.service_name;
+							newCond.device_name = condEl.service.device_name;
+							newCond.condition = condEl.condition;
+							newCond.value = condEl.value;
+							jsonData.conditions.push(newCond);
+						}
+
+						jsonThen = {};
+						jsonThen.type = trigEl.type;
+						
+						if (trigEl.type == 'command') {
+							if (trigEl.command == null || trigEl.command.command_name == null) {
+								alert("Command Missing");
+								return;
+							}
+
+							if (trigEl.command.command_type != 'Button') {
+								if (trigEl.argument == null) {
+									alert("Argument Missing");
+									return;
+								}
+
+								jsonThen.argument = trigEl.argument;
+							}
+						
+							jsonThen.device_name = trigEl.command.device_name;
+							jsonThen.service_name = trigEl.command.service_name;
+							jsonThen.command = trigEl.command.command_name;
+							
+						}
+						if (trigEl.type == 'mail') {
+							jsonThen.mail_address = $scope.mailDst;
+							jsonThen.text_content = trigEl.text_content;
+						}
+
+
+						jsonData.then = JSON.stringify(jsonThen)+"";
+						console.log(jsonData);
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/handleTrigger.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data);
+								$scope.getTriggers();
+							},
+							error: function(a, b, c) {
+								alert("Error (Del Schedule): " + a + b + c);
+							}
+						})
+						
+						$scope.closeDialog('#newTriggerDialog');
+					}
+		
+					
+					$scope.deleteTrigger = function(trigger) {
+						jsonData = {};
+						jsonData.request = 'R';
+						jsonData.id = trigger.id;
+						console.log(jsonData)						
+
+						$.ajax({
+							method: 'POST',
+							contentType: "application/json; charset=utf-8",
+							dataType: 'json',
+							url: $scope.serverUrl + '/handleTrigger.py',
+							data: JSON.stringify(jsonData),
+							success: function(data)	{
+								console.log(data);
+								$scope.getTriggers($scope.selectedService);
+							},
+							error: function(a, b, c) {
+								alert("Error (Delete Trigger): " + a + b +c);
+							}
+						})
+					}
+					
+					$scope.showDialog = function(ev, modalId) {
+
+						/* Reset newTriggerEl */
+						if (modalId == "#newTriggerDialog") {
+							$scope.newTriggerEl.conditions = [];
+							$scope.newTriggerEl.conditions.push({});
+						}	
+
+						$mdDialog.show({
+     							contentElement: modalId,
+      							parent: angular.element(document.body),
+      							targetEvent: ev,
+      							clickOutsideToClose: false
+    						});
+						console.log("Dialog Open");
+					}
+
+					$scope.closeDialog = function(dialogId) {
+						$mdDialog.hide({
+							contentElement: dialogId
+						})
+					}
+
+					$scope.toDevicePage = function(dev) {
+						$scope.selectedDevice = dev;
+						$scope.showDeviceAndServicePage = false;
+						$scope.showAllGraphPage = false;
+						$scope.showDevicePage = true;
+						$scope.showBackButton = true;	
+					}
+
+					$scope.toServicePage = function(serv) {
+						$scope.selectedService = serv;
+						$scope.showDeviceAndServicePage = false;
+						$scope.showDevicePage = false;
+						$scope.showServicePage = true;
+						$scope.showAllGraphPage = false;
+						$scope.showBackButton = true;
+						$scope.getSchedule(serv);	
+						$scope.getTriggers(serv);
+					
+						var d = new Date();
+						var n = d.getTime(); 
+						$scope.getServiceData(serv, n - (1000*60*60*24), n);
+					}
+
+					$scope.toAllServiceGraph = function() {
+						console.log("To all service graph page")
+						$scope.showDeviceAndServicePage = false;
+						$scope.showDevicePage = false;
+						$scope.showServicePage = false;
+						$scope.showAllGraphPage = true;
+						$scope.showBackButton = true;
+			
+						var d = new Date();
+						var n = d.getTime(); 
+						$scope.updateAllServiceGraph(n - (1000*60*60*24), n);
+					}	
+					
+					$scope.goBack = function() {
+						$scope.showDeviceAndServicePage = true;
+						$scope.showDevicePage = false;
+						$scope.showServicePage = false;
+						$scope.showBackButton = false;	
+						$scope.showAllGraphPage = false;
+					}
+
+					$scope.reloadContent = function() {
+						console.log("Reload")
+						$scope.loadDevices();
+						$scope.getTriggers();
+					}
+
+					$scope.range = function(min, max, step) {
+   						step = step || 1;
+    						var input = [];
+    						for (var i = min; i <= max; i += step) {
+        						input.push(i);
+    						}
+    						return input;
+					};
+
+					$scope.loadDevices();
+					$scope.getTriggers();
+				}])
+		</script>
+
+	</body>
+</html>
