@@ -1,0 +1,6 @@
+{
+	"bluetooth_uuid" : "00001101-0000-1000-8000-00805F9B34FB",
+	"thingspeak_user_key" : "XXXXXXXXXXXXXXXX",
+	"send_mail_address" : "example@live.com",
+	"send_mail_password" : "MyMailPassword"
+}
