@@ -206,7 +206,7 @@ def get_schedule():
                 	schedList.append(el)
 
 	jsonObj = {}
-	jsonObj["schedule"] = schedJson
+	jsonObj["schedule"] = schedList
 
 	return json.dumps(jsonObj)
 
