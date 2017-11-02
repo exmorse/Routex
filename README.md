@@ -4,6 +4,13 @@ It uses a Raspberry Pi as a multi-technology router to create a network
 in which devices using different protocol can interoperate. The behaviour of the 
 system is set via Android application or web site.
 
+## Main Features
+- Interoperability between devices using different technologies
+- Dynamic join and removal of end-devices
+- Simple end-devices, application logic in the router
+- Scheduling of operations on end-devices
+- Operation on a device can be triggered by conditions on values provided by different devices 
+
 ## Supported Technologies
 * WiFi
 * Bluetooth
