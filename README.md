@@ -17,6 +17,7 @@ system is set via Android application or web site.
 * Zigbee
 * nRF24L01
 * 433MHz Radio
+* LoRa
 
 ## Requirements
 The following Python modules are required dependencies:
@@ -25,6 +26,7 @@ The following Python modules are required dependencies:
 - ```pigpio``` (https://github.com/joan2937/pigpio)
 - ```piVirtualWire``` (https://github.com/DzikuVx/piVirtualWire)
 - ```pyRadioHeadNRF24``` (https://github.com/exmorse/pyRadioHeadNRF24)
+- ```pyRadioHeadRF95``` (https://github.com/exmorse/pyRadioHeadRF95)
 - ```python-xbee``` (https://github.com/nioinnovation/python-xbee)
 - ```pybluez``` (https://github.com/karulis/pybluez)
 - ```schedule``` (https://github.com/dbader/schedule)
@@ -33,7 +35,7 @@ The following Python modules are required dependencies:
 
 ## Devices
 #### Arduino & ESP8266
-`ArduinoRoutex.zip` and `ESPRoutex.zip` contain the library to program Arduino and ESP8266
+`ArduinoRoutex.zip`, `ArduinoLoraRoutex.zip` and `ESPRoutex.zip` contain the library to program Arduino and ESP8266
 as Routex devices.
 
 #### Bluetooth Android Client
