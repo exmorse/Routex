@@ -21,8 +21,11 @@ import thingSpeak
 sys.path.append("/home/pi/Documents/pyRadioHeadNRF24")
 import pyRadioHeadNRF24 as radio
 nrf24 = None
-#nrf24 = radio.nRF24()
-#nrf24.managerInit(1) #     1 is my address
+
+# LoRa - RF95 
+sys.path.append("/home/pi/Documents/pyRadioHeadRF95")
+import pyRadioHeadRF95 as loradio
+rf95 = None
 
 
 # XBee
@@ -54,7 +57,7 @@ bt_connection = None
 
 # RF 433MHz
 import pigpio
-sys.path.append("/home/pi/Documents/RFLink/piVirtualWire-master")
+sys.path.append("/home/pi/Documents/piVirtualWire")
 import piVirtualWire
 rx433 = None
 tx433 = None
@@ -62,6 +65,7 @@ tx433 = None
 
 # Technology type constants
 NRF24 = "nRF24"
+LoRa = "LoRa"
 ZIGBEE = "ZigBee"
 WIFI = "WiFi"
 BLUETOOTH = "Bluetooth"
@@ -74,6 +78,7 @@ activeTech = {}
 # Thread lock to avoid concurrency problem in ZigBee and nRF24
 zigbeeLock = Lock()
 nrf24Lock = Lock()
+loraLock = Lock()
 rf433Lock = Lock()
 commandFileLock = Lock()
 devFileLock = Lock()
@@ -107,13 +112,16 @@ def readConfig():
 def releaseLocks(tech):
 	print "Releasing tech : " + tech
  
-	global zigbeeLock, nrf24Lock, rf433Lock
+	global zigbeeLock, nrf24Lock, rf433Lock, loraLock
 
 	if tech == ZIGBEE:
 		zigbeeLock.release()
 	
 	if tech == NRF24:
 		nrf24Lock.release()
+	
+	if tech == LoRa:
+		loraLock.release()
 	
 	if tech == RF433:
 		print rf433Lock
@@ -138,6 +146,7 @@ def setupTechnologies(techList):
 	
 	global xbee
 	global nrf24
+	global rf95
 	global s, wifi_connection
 	global bt_sock, bt_connection, UUID
 	global rx433, tx433
@@ -160,6 +169,20 @@ def setupTechnologies(techList):
 		activeTech[NRF24] = True
 	else:
 		activeTech[NRF24] = False
+
+	if len(techList) == 0 or LoRa.lower() in techList:
+		print "* Using LoRa - RF95"
+		rf95 = loradio.RF95()
+                rf95.init()
+                rf95.managerInit(1)
+                
+                rf95.setFrequency(868)
+                rf95.setTxPower(14, False)
+                rf95.setSignalBandwidth(rf95.Bandwidth500KHZ)
+                rf95.setSpreadingFactor(rf95.SpreadingFactor7)
+		activeTech[LoRa] = True
+	else:
+		activeTech[LoRa] = False
 
 	if len(techList) == 0 or WIFI.lower() in techList:
 		print "* Using WiFi"
@@ -214,7 +237,32 @@ def send(tech, dest, msgdata):
 
 		return (b >= 0)
 
-	# RF433
+        # LoRa - RF95
+        if tech == LoRa:
+		#print "sendtowait --- " + str(msgdata) + " to " + str(dest)
+		
+		timeout = time.time() + 5
+
+                time.sleep(0.1)
+                b = rf95.sendtoWait(msgdata, len(msgdata), int(dest))
+		while b == -1 and timeout > time.time():
+                	#print "Resending Ack..."
+			#print "sendtowait"
+                       	b = rf95.sendtoWait(msgdata, len(msgdata), int(dest))
+                	#print "Passed Resend"	
+	
+		#print "Returning from send..."	
+			
+		#print "Time " + str(time.time())
+		#print "Timeout was " + str(timeout)
+
+		if timeout < time.time():
+			print "Timeout was expired"
+			#print "Send result was " + str(b >= 0) 
+
+		return (b >= 0)
+	
+        # RF433
         if tech == RF433:
 		global rx433, tx433
                 #print "send --- " + str(msgdata) + " to " + str(dest)
@@ -310,12 +358,19 @@ def availableMessage():
         global wifi_connection
 	global bt_connection
 	global rx433, tx433	
-        
+        global nrf24, rf95
+
 	#nRF24
 	if activeTech[NRF24]:
         	if nrf24.available():
                 	(msg, l, source) = nrf24.recvfromAck()
                 	return (True, msg, l, source, NRF24)
+
+	#LoRa - RF95 
+	if activeTech[LoRa]:
+        	if rf95.available():
+                	(msg, l, source) = rf95.recvfromAck()
+                	return (True, msg, l, source, LoRa)
 
 	#RF433
 	if activeTech[RF433]:
@@ -387,6 +442,14 @@ def receiveMessageTech(tech, expectedSource):
         if tech == NRF24:
                 if nrf24.available():
                         (msg, l, source) = nrf24.recvfromAck()
+			if (str(source) == str(expectedSource)):
+                        	return (True, msg, l, source)
+                else:
+                        return (False, 0, 0, 0)
+
+        if tech == LoRa:
+                if rf95.available():
+                        (msg, l, source) = rf95.recvfromAck()
 			if (str(source) == str(expectedSource)):
                         	return (True, msg, l, source)
                 else:
@@ -552,7 +615,9 @@ def getInfoFromJoinRequest(msg):
 		alwaysOn = True
 	else:
 		alwaysOn = False
-
+    
+        print requestType
+        print deviceName
         return (requestType, deviceName, alwaysOn)
 
 
@@ -688,7 +753,6 @@ def getInfoFromCommandRequest(msg):
 	elif commandType == 'I' or commandType == 'N':
 		commandType = "Button_Int"
 
-	print (commandType, commandName, status)	
         return (commandType, commandName, status)
 
 
@@ -707,6 +771,9 @@ def addService(serviceName, serviceType, dev, source, tech):
 
 	if tech == NRF24:
 		nrf24Lock.acquire()
+
+	if tech == LoRa:
+		loraLock.acquire()
 
 	if tech == RF433:
 		rf433Lock.acquire()
@@ -826,6 +893,7 @@ def writeCommandToFile(tech, addr, servName, command, arg):
 def executeCommandFromParams(devName, tech, addr, servName, command, arg, ignoreAlwaysOn):
 	global zigbeeLock
 	global nrf24Lock
+	global loraLock
 	global rf433Lock
 	global wifi_connection
 
@@ -852,6 +920,9 @@ def executeCommandFromParams(devName, tech, addr, servName, command, arg, ignore
 
 	if tech == NRF24:
 		nrf24Lock.acquire()
+
+	if tech == LoRa:
+		loraLock.acquire()
 
 	if tech == RF433:
 		rf433Lock.acquire()
@@ -1366,6 +1437,9 @@ def acceptServiceDataUpdate(tech, addr, servName):
 	if tech == NRF24:
 		nrf24Lock.acquire()
 
+	if tech == LoRa:
+		loraLock.acquire()
+
 	if tech == RF433:
 		rf433Lock.acquire()
 
@@ -1526,11 +1600,13 @@ def mainLoop():
         while True:
                 zigbeeLock.acquire()
                 nrf24Lock.acquire()
+                loraLock.acquire()
                 rf433Lock.acquire()
                 # Receive Requests
                 (isAvailable, msg, l, source, tech) = availableMessage()
                 zigbeeLock.release()
                 nrf24Lock.release()
+                loraLock.release()
                 rf433Lock.release()
 
                 if isAvailable:
